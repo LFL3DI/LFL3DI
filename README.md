@@ -6,8 +6,9 @@ How to Custom Train the YOLOv8s model?
 model = YOLO('yolov8s.pt')
 
 **Training the custom model**
+path = provide absolute path to the data.yaml file. This file is present in the Lidar-6 folder. This folder contains the custom taining, test and validation data
 results = model.train(
-   data= provide absolute path to the data.yaml file. This file is present in the Lidar-6 folder. This folder contains the custom taining, test and validation data,
+   data= path,
    epochs=5,
    name='yolov8s_custom')
 
