@@ -1,0 +1,15 @@
+names:
+- circle
+- hand
+- person
+- rectangle
+nc: 4
+roboflow:
+  license: CC BY 4.0
+  project: lidar-shlkl
+  url: https://universe.roboflow.com/lidar-xmmjt/lidar-shlkl/dataset/6
+  version: 6
+  workspace: lidar-xmmjt
+test: C://Users//jaura//Downloads//Lidar-6//test//images
+train: C://Users//jaura//Downloads//Lidar-6//train//images
+val: C://Users//jaura//Downloads//Lidar-6//valid//images
