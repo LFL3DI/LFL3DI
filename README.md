@@ -25,5 +25,9 @@ path = provide absolute path to the best.pt present in the yolov8s_custom/weight
 model = YOLO(path)
 
 
+**Run the program**
+source ~/yolov5-venv/bin/activate
+python main.py
+
 
 
