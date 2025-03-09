@@ -7,6 +7,16 @@ from camera_handler import LiDARCamera
 from object_detector import ObjectDetector
 from visualizer import draw_results
 
+import asyncio
+import json
+import websockets
+from http.server import SimpleHTTPRequestHandler
+import socketserver
+import os
+from pathlib import Path
+from threading import Thread
+import base64
+
 cv2.setUseOptimized(True)
 cv2.setNumThreads(4)
 
@@ -14,6 +24,34 @@ frame_lock = threading.Lock()
 latest_frame = None
 latest_depth = None
 latest_points_3d = None
+output_image = None
+
+HTTP_PORT = 8081
+WS_PORT = 5678
+
+async def websocket_handler(websocket):
+    async for message in websocket:
+        data = json.loads(message)
+        
+        if data["cmd"] == "read":
+            _, buffer = cv2.imencode('.jpg', output_image)
+            image_base64 = base64.b64encode(buffer).decode('utf-8')
+            try:
+                payload = json.dumps({
+                    'depth': image_base64,
+                })
+                await websocket.send(payload)
+                
+            except Exception as e:
+                print(e)
+
+async def start_websocket_server():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    ws_server = websockets.serve(websocket_handler, "127.0.0.1", WS_PORT)
+    loop.run_until_complete(ws_server)
+    loop.run_forever()
 
 def lidar_thread(camera):
     global latest_frame, latest_depth, latest_points_3d
@@ -52,6 +90,29 @@ def main():
     detector = ObjectDetector()
 
     threading.Thread(target=lidar_thread, args=(lidar_camera.camera,), daemon=True).start()
+
+    ws_thread = Thread(target=lambda: asyncio.new_event_loop().run_until_complete(start_websocket_server()), daemon=True)
+    ws_thread.start()
+
+    web_dir = Path(__file__).absolute().parent
+    os.chdir(web_dir)
+
+
+    class CustomHandler(SimpleHTTPRequestHandler):
+        extensions_map = {
+            ".html": "text/html",
+            ".js": "application/javascript",
+            ".css": "text/css",
+            **SimpleHTTPRequestHandler.extensions_map,
+        }
+
+    with socketserver.TCPServer(("", HTTP_PORT), CustomHandler) as httpd:
+        print(f"HTTP Server running at http://127.0.0.1:{HTTP_PORT}")
+        print(f"WebSocket Server running at ws://127.0.0.1:{WS_PORT}")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("Shutting down servers...")
 
     while True:
         with frame_lock:
