@@ -24,7 +24,7 @@ frame_lock = threading.Lock()
 latest_frame = None
 latest_depth = None
 latest_points_3d = None
-output_image = None
+detector = None
 
 HTTP_PORT = 8081
 WS_PORT = 5678
@@ -34,7 +34,37 @@ async def websocket_handler(websocket):
         data = json.loads(message)
         
         if data["cmd"] == "read":
-            _, buffer = cv2.imencode('.jpg', output_image)
+            with frame_lock:
+                if latest_frame is None or latest_depth is None or latest_points_3d is None:
+                    continue
+                mat_amplitude = latest_frame.copy()
+                mat_distance = latest_depth.copy()
+                points_3d = latest_points_3d.copy()
+
+            mat_distance = np.nan_to_num(mat_distance, nan=0.0)
+
+            mat_amplitude = cv2.normalize(mat_amplitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
+            colored_image = cv2.applyColorMap(mat_amplitude, cv2.COLORMAP_JET)
+
+            results = detector.detect_objects(colored_image)
+
+            for point in points_3d:
+                if np.isnan(point).any():
+                    print("Warning: Detected NaN in points_3d, replacing with zeros.")
+                    point = np.nan_to_num(point)
+
+            output_image = draw_results(colored_image, results, points_3d, 160, 60, detector.model.names)
+
+            resized_image = cv2.resize(output_image, (1600, 600), interpolation=cv2.INTER_CUBIC)
+
+            # cv2.imshow("YOLO + LiDAR Detection", resized_image)
+            # cv2.waitKey(1)
+            # time.sleep(0.01)
+
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
+            _, buffer = cv2.imencode('.jpg', resized_image)
             image_base64 = base64.b64encode(buffer).decode('utf-8')
             try:
                 payload = json.dumps({
@@ -46,12 +76,8 @@ async def websocket_handler(websocket):
                 print(e)
 
 async def start_websocket_server():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    ws_server = websockets.serve(websocket_handler, "127.0.0.1", WS_PORT)
-    loop.run_until_complete(ws_server)
-    loop.run_forever()
+    async with websockets.serve(websocket_handler, "127.0.0.1", WS_PORT):
+        await asyncio.Future()
 
 def lidar_thread(camera):
     global latest_frame, latest_depth, latest_points_3d
@@ -86,17 +112,17 @@ def lidar_thread(camera):
             print(f"Error in LiDAR thread: {e}")
 
 def main():
+    global detector
     lidar_camera = LiDARCamera()
     detector = ObjectDetector()
 
     threading.Thread(target=lidar_thread, args=(lidar_camera.camera,), daemon=True).start()
 
-    ws_thread = Thread(target=lambda: asyncio.new_event_loop().run_until_complete(start_websocket_server()), daemon=True)
+    ws_thread = Thread(target=lambda: asyncio.run(start_websocket_server()), daemon=True)
     ws_thread.start()
 
     web_dir = Path(__file__).absolute().parent
     os.chdir(web_dir)
-
 
     class CustomHandler(SimpleHTTPRequestHandler):
         extensions_map = {
@@ -114,39 +140,10 @@ def main():
         except KeyboardInterrupt:
             print("Shutting down servers...")
 
-    while True:
-        with frame_lock:
-            if latest_frame is None or latest_depth is None or latest_points_3d is None:
-                continue
-            mat_amplitude = latest_frame.copy()
-            mat_distance = latest_depth.copy()
-            points_3d = latest_points_3d.copy()
+    # while True:
 
-        mat_distance = np.nan_to_num(mat_distance, nan=0.0)
 
-        mat_amplitude = cv2.normalize(mat_amplitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-
-        colored_image = cv2.applyColorMap(mat_amplitude, cv2.COLORMAP_JET)
-
-        results = detector.detect_objects(colored_image)
-
-        for point in points_3d:
-            if np.isnan(point).any():
-                print("Warning: Detected NaN in points_3d, replacing with zeros.")
-                point = np.nan_to_num(point)
-
-        output_image = draw_results(colored_image, results, points_3d, 160, 60, detector.model.names)
-
-        resized_image = cv2.resize(output_image, (1200, 1000), interpolation=cv2.INTER_CUBIC)
-
-        cv2.imshow("YOLO + LiDAR Detection", resized_image)
-        cv2.waitKey(1)
-        time.sleep(0.01)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    cv2.destroyAllWindows()
+    # cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
