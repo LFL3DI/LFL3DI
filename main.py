@@ -124,7 +124,11 @@ def lidar_thread(camera):
 
 def main():
     global detector, out
-    lidar_camera = LiDARCamera()
+    try:
+        lidar_camera = LiDARCamera()
+    except Exception as e:
+        print(f"Error in LiDAR camera initialization: {e}")
+        return
     detector = ObjectDetector()
 
     threading.Thread(target=lidar_thread, args=(lidar_camera.camera,), daemon=True).start()
