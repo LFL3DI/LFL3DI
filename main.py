@@ -33,7 +33,7 @@ WS_PORT = 5678
 # Initialize VideoWriter
 current_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-out = cv2.VideoWriter(f'recordings/{current_time}.mp4', fourcc, 5.0, (1600, 600))
+out = cv2.VideoWriter(f'recordings/{current_time}.mp4', fourcc, 2.0, (1600, 600))
 
 async def websocket_handler(websocket):
     global out
