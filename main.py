@@ -30,8 +30,7 @@ detector = None
 HTTP_PORT = 8081
 WS_PORT = 5678
 
-async def websocket_handler(websocket, video_output):
-    global out
+async def websocket_handler(websocket, path, video_output):
     async for message in websocket:
         data = json.loads(message)
         
@@ -60,13 +59,6 @@ async def websocket_handler(websocket, video_output):
 
             resized_image = cv2.resize(output_image, (1600, 600), interpolation=cv2.INTER_CUBIC)
 
-            # cv2.imshow("YOLO + LiDAR Detection", resized_image)
-            # cv2.waitKey(1)
-            # time.sleep(0.01)
-
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
-            
             # Write the frame to the video file
             video_output.write(resized_image)
 
