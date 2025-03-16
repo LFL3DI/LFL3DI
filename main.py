@@ -154,7 +154,7 @@ def main():
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("Shutting down servers...")
-            out.release()  # Release the VideoWriter object
+            video_output.release()  # Release the VideoWriter object
 
     # while True:
 
