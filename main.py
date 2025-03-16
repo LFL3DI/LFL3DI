@@ -82,7 +82,7 @@ async def websocket_handler(websocket, video_output):
                 print(e)
 
 async def start_websocket_server(video_output):
-    async with websockets.serve(lambda ws, path: websocket_handler(ws, video_output), "127.0.0.1", WS_PORT):
+    async with websockets.serve(lambda ws, path: websocket_handler(ws, path, video_output), "127.0.0.1", WS_PORT):
         await asyncio.Future()
 
 def lidar_thread(camera):
