@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 from threading import Thread
 import base64
+from datetime import datetime
 
 cv2.setUseOptimized(True)
 cv2.setNumThreads(4)
@@ -29,7 +30,13 @@ detector = None
 HTTP_PORT = 8081
 WS_PORT = 5678
 
+# Initialize VideoWriter
+current_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+out = cv2.VideoWriter(f'{current_time}.mp4', fourcc, 20.0, (1600, 600))
+
 async def websocket_handler(websocket):
+    global out
     async for message in websocket:
         data = json.loads(message)
         
@@ -64,6 +71,10 @@ async def websocket_handler(websocket):
 
             # if cv2.waitKey(1) & 0xFF == ord('q'):
             #     break
+            
+            # Write the frame to the video file
+            out.write(resized_image)
+
             _, buffer = cv2.imencode('.jpg', resized_image)
             image_base64 = base64.b64encode(buffer).decode('utf-8')
             try:
@@ -112,7 +123,7 @@ def lidar_thread(camera):
             print(f"Error in LiDAR thread: {e}")
 
 def main():
-    global detector
+    global detector, out
     lidar_camera = LiDARCamera()
     detector = ObjectDetector()
 
@@ -139,6 +150,7 @@ def main():
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("Shutting down servers...")
+            out.release()  # Release the VideoWriter object
 
     # while True:
 
