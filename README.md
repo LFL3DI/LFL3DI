@@ -28,6 +28,8 @@ model = YOLO(path)
 **Run the program**
 source ~/yolov5-venv/bin/activate
 python main.py
+Go to the browser and type the address 127.0.0.1:8080 to access the web user interface
+Note, the port number should be consist with the port number defined in the main.py and if there is camera issues, please reconnect the camera.
 
 
 
