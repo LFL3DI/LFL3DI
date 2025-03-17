@@ -69,11 +69,11 @@ async def websocket_handler(websocket):
             person_detected = detected_object == "person"
 
             # Trigger recording if a person is detected
-            if person_detected:
+            if person_detected and not CONTINUOUS_RECORDING:
                 if not recording:
                     recording = True
                     current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-                    filename = f'recordings/LiDAR-Recording-{current_time}.mp4'
+                    filename = f'recordings/LiDAR-Recording--{current_time}.mp4'
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                     out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
                 # Set the recording start time or refresh timer if already recording
@@ -143,10 +143,12 @@ def main():
         return
     detector = ObjectDetector()
 
-    # Initialize VideoWriter after successful camera setup
-    current_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(f'recordings/{current_time}.mp4', fourcc, 2.0, (1600, 600))
+    # Initialize VideoWriter after successful camera setup IF CONTINUOUS_RECORDING is enabled
+    if CONTINUOUS_RECORDING:
+        current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+        filename = f'recordings/LiDAR-Recording--{current_time}.mp4'
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
 
     threading.Thread(target=lidar_thread, args=(lidar_camera.camera,), daemon=True).start()
 
