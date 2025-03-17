@@ -72,11 +72,12 @@ async def websocket_handler(websocket):
             if person_detected:
                 if not recording:
                     recording = True
+                    current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+                    filename = f'recordings/LiDAR-Recording-{current_time}.mp4'
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
+                # Set the recording start time or refresh timer if already recording
                 recording_start_time = time.time()
-                current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-                filename = f'recordings/LiDAR-Recording-{current_time}.mp4'
-                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
             
             # Check if we should still be recording (person detected within the last x seconds)
             if recording or CONTINUOUS_RECORDING:
