@@ -61,12 +61,12 @@ async def websocket_handler(websocket):
                     print("Warning: Detected NaN in points_3d, replacing with zeros.")
                     point = np.nan_to_num(point)
 
-            output_image = draw_results(colored_image, results, points_3d, 160, 60, detector.model.names)
+            output_image, detected_object = draw_results(colored_image, results, points_3d, 160, 60, detector.model.names)
 
             resized_image = cv2.resize(output_image, (1600, 600), interpolation=cv2.INTER_CUBIC)
 
             # Check if a person was detected
-            person_detected = any(result['label'] == 'person' for result in results)
+            person_detected = detected_object == "person"
 
             # Trigger recording if a person is detected
             if person_detected and not recording:

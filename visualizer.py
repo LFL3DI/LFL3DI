@@ -43,4 +43,4 @@ def draw_results(image, results, points_3d, width, height, class_names):
             draw_overlay(image, position_label, x1, text_y_position, font_scale, box_color)
             draw_overlay(image, angle_label, x1, text_y_angle, font_scale, box_color)
 
-    return image
+    return image, label
