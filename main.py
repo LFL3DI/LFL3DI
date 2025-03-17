@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 from threading import Thread
 import base64
+from datetime import datetime
 
 cv2.setUseOptimized(True)
 cv2.setNumThreads(4)
@@ -25,11 +26,17 @@ latest_frame = None
 latest_depth = None
 latest_points_3d = None
 detector = None
+out = None
+recording = None
+recording_start_time = None
+CONTINUOUS_RECORDING = False
+TRIGGERED_RECORDING_TIME = 5  # seconds
 
 HTTP_PORT = 8081
 WS_PORT = 5678
 
 async def websocket_handler(websocket):
+    global out, recording, recording_start_time
     async for message in websocket:
         data = json.loads(message)
         
@@ -54,16 +61,32 @@ async def websocket_handler(websocket):
                     print("Warning: Detected NaN in points_3d, replacing with zeros.")
                     point = np.nan_to_num(point)
 
-            output_image = draw_results(colored_image, results, points_3d, 160, 60, detector.model.names)
+            output_image, detected_object = draw_results(colored_image, results, points_3d, 160, 60, detector.model.names)
 
             resized_image = cv2.resize(output_image, (1600, 600), interpolation=cv2.INTER_CUBIC)
 
-            # cv2.imshow("YOLO + LiDAR Detection", resized_image)
-            # cv2.waitKey(1)
-            # time.sleep(0.01)
+            # Check if a person was detected
+            person_detected = detected_object == "person"
 
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
+            # Trigger recording if a person is detected
+            if person_detected and not CONTINUOUS_RECORDING:
+                if not recording:
+                    recording = True
+                    current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+                    filename = f'recordings/Triggered-Recording-{detected_object}--{current_time}.mp4'
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
+                # Set the recording start time or refresh timer if already recording
+                recording_start_time = time.time()
+            
+            # Check if we should still be recording (person detected within the last x seconds)
+            if recording or CONTINUOUS_RECORDING:
+                out.write(resized_image)
+
+                if recording_start_time is not None and time.time() - recording_start_time >= TRIGGERED_RECORDING_TIME:
+                    recording = False
+                    out.release()
+
             _, buffer = cv2.imencode('.jpg', resized_image)
             image_base64 = base64.b64encode(buffer).decode('utf-8')
             try:
@@ -112,9 +135,20 @@ def lidar_thread(camera):
             print(f"Error in LiDAR thread: {e}")
 
 def main():
-    global detector
-    lidar_camera = LiDARCamera()
+    global detector, out
+    try:
+        lidar_camera = LiDARCamera()
+    except Exception as e:
+        print(f"Error in LiDAR camera initialization: {e}")
+        return
     detector = ObjectDetector()
+
+    # Initialize VideoWriter after successful camera setup IF CONTINUOUS_RECORDING is enabled
+    if CONTINUOUS_RECORDING:
+        current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+        filename = f'recordings/Continuous-Recording--{current_time}.mp4'
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
 
     threading.Thread(target=lidar_thread, args=(lidar_camera.camera,), daemon=True).start()
 
@@ -139,6 +173,9 @@ def main():
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("Shutting down servers...")
+            lidar_camera.release()  # Release the LiDAR camera
+            if out:
+                out.release()  # Release the VideoWriter object
 
     # while True:
 
