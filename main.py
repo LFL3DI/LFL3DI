@@ -69,12 +69,14 @@ async def websocket_handler(websocket):
             person_detected = detected_object == "person"
 
             # Trigger recording if a person is detected
-            if person_detected and not recording:
-                recording = True
+            if person_detected:
+                if not recording:
+                    recording = True
                 recording_start_time = time.time()
-                current_time = datetime.now().strftime("%Y-%m_%d-%H-%M-%S")
+                current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+                filename = f'recordings/LiDAR-Recording-{current_time}.mp4'
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                out = cv2.VideoWriter(f'recordings/{current_time}.mp4', fourcc, 2.0, (1600, 600))
+                out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
             
             # Check if we should still be recording (person detected within the last x seconds)
             if recording or CONTINUOUS_RECORDING:
