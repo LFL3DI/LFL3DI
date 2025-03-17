@@ -26,11 +26,13 @@ latest_frame = None
 latest_depth = None
 latest_points_3d = None
 detector = None
+out = None
 
 HTTP_PORT = 8081
 WS_PORT = 5678
 
-async def websocket_handler(websocket, path, video_output):
+async def websocket_handler(websocket):
+    global out
     async for message in websocket:
         data = json.loads(message)
         
@@ -60,7 +62,7 @@ async def websocket_handler(websocket, path, video_output):
             resized_image = cv2.resize(output_image, (1600, 600), interpolation=cv2.INTER_CUBIC)
 
             # Write the frame to the video file
-            video_output.write(resized_image)
+            out.write(resized_image)
 
             _, buffer = cv2.imencode('.jpg', resized_image)
             image_base64 = base64.b64encode(buffer).decode('utf-8')
@@ -73,8 +75,8 @@ async def websocket_handler(websocket, path, video_output):
             except Exception as e:
                 print(e)
 
-async def start_websocket_server(video_output):
-    async with websockets.serve(lambda ws, path: websocket_handler(ws, path, video_output), "127.0.0.1", WS_PORT):
+async def start_websocket_server():
+    async with websockets.serve(websocket_handler, "127.0.0.1", WS_PORT):
         await asyncio.Future()
 
 def lidar_thread(camera):
@@ -110,7 +112,7 @@ def lidar_thread(camera):
             print(f"Error in LiDAR thread: {e}")
 
 def main():
-    global detector
+    global detector, out
     try:
         lidar_camera = LiDARCamera()
     except Exception as e:
@@ -118,14 +120,14 @@ def main():
         return
     detector = ObjectDetector()
 
-    # Initialize VideoWriter
+    # Initialize VideoWriter after successful camera setup
     current_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    video_output = cv2.VideoWriter(f'recordings/{current_time}.mp4', fourcc, 2.0, (1600, 600))
+    out = cv2.VideoWriter(f'recordings/{current_time}.mp4', fourcc, 2.0, (1600, 600))
 
     threading.Thread(target=lidar_thread, args=(lidar_camera.camera,), daemon=True).start()
 
-    ws_thread = Thread(target=lambda: asyncio.run(start_websocket_server(video_output)), daemon=True)
+    ws_thread = Thread(target=lambda: asyncio.run(start_websocket_server()), daemon=True)
     ws_thread.start()
 
     web_dir = Path(__file__).absolute().parent
@@ -146,7 +148,7 @@ def main():
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("Shutting down servers...")
-            video_output.release()  # Release the VideoWriter object
+            out.release()  # Release the VideoWriter object
 
     # while True:
 
