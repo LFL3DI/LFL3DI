@@ -148,7 +148,10 @@ def main():
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("Shutting down servers...")
-            out.release()  # Release the VideoWriter object
+            if lidar_camera:
+                lidar_camera.close()  # Release the LiDAR camera
+            if out:
+                out.release()  # Release the VideoWriter object
 
     # while True:
 
