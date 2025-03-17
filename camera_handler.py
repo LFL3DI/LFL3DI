@@ -32,3 +32,9 @@ class LiDARCamera:
 
         points_3d = frame.points_3d  # 3D ��������
         return mat_depth, points_3d, frame.width, frame.height
+
+    def release(self):
+        """ Release the LiDAR camera resources """
+        if self.camera:
+            self.camera.close()
+            self.camera = None

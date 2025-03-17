@@ -13,6 +13,7 @@ def draw_overlay(image, text, x, y, font_scale, color, alpha=0.5):
     cv2.putText(image, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), 1)
 
 def draw_results(image, results, points_3d, width, height, class_names):
+    detected_object = None
     for result in results:
         for box in result.boxes:
             x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
@@ -28,7 +29,8 @@ def draw_results(image, results, points_3d, width, height, class_names):
 
             conf = box.conf[0].item()
             cls = int(box.cls[0].item())
-            label = f"{class_names[cls]}: {conf:.2f}"
+            detected_object = class_names[cls]
+            label = f"{detected_object}: {conf:.2f}"
 
             box_color = (0, 255, 0)
 
@@ -43,4 +45,4 @@ def draw_results(image, results, points_3d, width, height, class_names):
             draw_overlay(image, position_label, x1, text_y_position, font_scale, box_color)
             draw_overlay(image, angle_label, x1, text_y_angle, font_scale, box_color)
 
-    return image
+    return image, detected_object

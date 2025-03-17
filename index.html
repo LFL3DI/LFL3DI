@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <meta charset="utf-8">
+        <title>LFL3D output</title>
+
+        <link rel="stylesheet" href="css/spectre.min.css">
+        <link rel="stylesheet" href="css/spectre-exp.min.css">
+        <link rel="stylesheet" href="css/spectre-icons.min.css">
+        <link rel="stylesheet" href="css/loading.css">
+
+        <style>
+            .tau-logo {
+                height: 40px;
+                bottom: 0;
+                right: 0;
+                margin: 20px;
+                z-index: 110;
+            }
+
+            .splash-screen {
+                height: 100vh;
+                width: 100vw;
+                background: black;
+                z-index: 100;
+                align-items: center;
+                justify-content: center;
+            }
+        </style>
+
+    </head>
+
+  <body>
+    <div id='app'>
+
+        <div id="pip" class="p-absolute m-2" style="max-width: 1600px; z-index: 90; right:0px">
+
+            <div class="card m-2">
+                <div class="card-header">
+                    <!-- <div class="card-title h5">Depth</div> -->
+                    <div class="card-subtitle">Data output</div>
+                </div>
+                <div class="card-image">
+                  <img id="amplitudeView" src="" class="img-responsive" style="width: 100%;">
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        window.ws = new WebSocket("ws://127.0.0.1:5678/")
+        // ws.sendObj = function(data) {
+        //     this.send(JSON.stringify(data))
+        // }
+    </script>
+
+    <script type="module" src="js/app.js" ></script>
+
+
+    </body>
+</html>
