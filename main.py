@@ -27,12 +27,16 @@ latest_depth = None
 latest_points_3d = None
 detector = None
 out = None
+recording = None
+recording_start_time = None
+CONTINUOUS_RECORDING = False
+TRIGGERED_RECORDING_TIME = 5  # seconds
 
 HTTP_PORT = 8081
 WS_PORT = 5678
 
 async def websocket_handler(websocket):
-    global out
+    global out, recording, recording_start_time
     async for message in websocket:
         data = json.loads(message)
         
@@ -61,8 +65,24 @@ async def websocket_handler(websocket):
 
             resized_image = cv2.resize(output_image, (1600, 600), interpolation=cv2.INTER_CUBIC)
 
-            # Write the frame to the video file
-            out.write(resized_image)
+            # Check if a person was detected
+            person_detected = any(result['label'] == 'person' for result in results)
+
+            # Trigger recording if a person is detected
+            if person_detected and not recording:
+                recording = True
+                recording_start_time = time.time()
+                current_time = datetime.now().strftime("%Y-%m-%d-%H-%M")
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                out = cv2.VideoWriter(f'recordings/{current_time}.mp4', fourcc, 2.0, (1600, 600))
+            
+            # Check if we should still be recording (person detected within the last x seconds)
+            if recording or CONTINUOUS_RECORDING:
+                out.write(resized_image)
+
+                if recording_start_time is not None and time.time() - recording_start_time >= TRIGGERED_RECORDING_TIME:
+                    recording = False
+                    out.release()
 
             _, buffer = cv2.imencode('.jpg', resized_image)
             image_base64 = base64.b64encode(buffer).decode('utf-8')
