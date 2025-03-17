@@ -110,7 +110,6 @@ def lidar_thread(camera):
 
         except Exception as e:
             print(f"Error in LiDAR thread: {e}")
-            return
 
 def main():
     global detector, out
