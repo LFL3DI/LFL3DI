@@ -30,65 +30,93 @@ out = None
 recording = None
 recording_start_time = None
 CONTINUOUS_RECORDING = False
+RECORDING_MODE = "live"
+STOP_RECORDING = False
 TRIGGERED_RECORDING_TIME = 5  # seconds
 
 HTTP_PORT = 8081
 WS_PORT = 5678
 
 async def websocket_handler(websocket):
-    global out, recording, recording_start_time
+    global out, recording, recording_start_time, RECORDING_MODE
     async for message in websocket:
         data = json.loads(message)
         
         if data["cmd"] == "read":
-            with frame_lock:
-                if latest_frame is None or latest_depth is None or latest_points_3d is None:
-                    continue
-                mat_amplitude = latest_frame.copy()
-                mat_distance = latest_depth.copy()
-                points_3d = latest_points_3d.copy()
+            # If not in stop mode, generating new frame
+            if RECORDING_MODE != "stop":
+                with frame_lock:
+                    if latest_frame is None or latest_depth is None or latest_points_3d is None:
+                        continue
+                    mat_amplitude = latest_frame.copy()
+                    mat_distance = latest_depth.copy()
+                    points_3d = latest_points_3d.copy()
 
-            mat_distance = np.nan_to_num(mat_distance, nan=0.0)
+                mat_distance = np.nan_to_num(mat_distance, nan=0.0)
 
-            mat_amplitude = cv2.normalize(mat_amplitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+                mat_amplitude = cv2.normalize(mat_amplitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
 
-            colored_image = cv2.applyColorMap(mat_amplitude, cv2.COLORMAP_JET)
+                colored_image = cv2.applyColorMap(mat_amplitude, cv2.COLORMAP_JET)
 
-            results = detector.detect_objects(colored_image)
+                results = detector.detect_objects(colored_image)
 
-            for point in points_3d:
-                if np.isnan(point).any():
-                    print("Warning: Detected NaN in points_3d, replacing with zeros.")
-                    point = np.nan_to_num(point)
+                for point in points_3d:
+                    if np.isnan(point).any():
+                        print("Warning: Detected NaN in points_3d, replacing with zeros.")
+                        point = np.nan_to_num(point)
 
-            output_image, detected_object = draw_results(colored_image, results, points_3d, 160, 60, detector.model.names)
+                output_image, detected_object = draw_results(colored_image, results, points_3d, 160, 60, detector.model.names)
 
-            resized_image = cv2.resize(output_image, (1600, 600), interpolation=cv2.INTER_CUBIC)
+                resized_image = cv2.resize(output_image, (1600, 600), interpolation=cv2.INTER_CUBIC)
 
-            # Check if a person was detected
-            person_detected = detected_object == "person"
+                _, buffer = cv2.imencode('.jpg', resized_image)
+                image_base64 = base64.b64encode(buffer).decode('utf-8')
 
-            # Trigger recording if a person is detected
-            if person_detected and not CONTINUOUS_RECORDING:
+            if RECORDING_MODE == "triggering":
+                # Check if a person was detected
+                person_detected = detected_object == "person"
+                # Create new file
                 if not recording:
                     recording = True
                     current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
                     filename = f'recordings/Triggered-Recording-{detected_object}--{current_time}.mp4'
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                     out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
-                # Set the recording start time or refresh timer if already recording
-                recording_start_time = time.time()
-            
-            # Check if we should still be recording (person detected within the last x seconds)
-            if recording or CONTINUOUS_RECORDING:
+                
+                # Trigger recording if a person is detected
+                if person_detected:
+                    # Set the recording start time or refresh timer if already recording
+                    recording_start_time = time.time()
+                    # Check if we should still be recording (person detected within the last x seconds)
+                    out.write(resized_image)
+
+                # Keep recording during first 5 seconds
+                elif recording_start_time is not None and time.time() - recording_start_time < TRIGGERED_RECORDING_TIME:
+                    out.write(resized_image)
+
+                # Stop when timmer end
+                elif recording_start_time is not None and time.time() - recording_start_time >= TRIGGERED_RECORDING_TIME:
+                    recording = False
+                    recording_start_time = None
+                    out.release()
+
+            # Initialize VideoWriter after successful camera setup IF CONTINUOUS_RECORDING is enabled
+            if RECORDING_MODE == "continuous":
+                if not recording:
+                    recording = True
+                    current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
+                    filename = f'recordings/Continuous-Recording--{current_time}.mp4'
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
                 out.write(resized_image)
 
-                if recording_start_time is not None and time.time() - recording_start_time >= TRIGGERED_RECORDING_TIME:
+            # In live and stop mode always store any recording in buffer
+            if RECORDING_MODE == "live" or RECORDING_MODE == "stop":
+                if recording:
                     recording = False
                     out.release()
 
-            _, buffer = cv2.imencode('.jpg', resized_image)
-            image_base64 = base64.b64encode(buffer).decode('utf-8')
+            # Send images to the client side
             try:
                 payload = json.dumps({
                     'depth': image_base64,
@@ -97,6 +125,18 @@ async def websocket_handler(websocket):
                 
             except Exception as e:
                 print(e)
+
+        # client command handling
+        elif data["cmd"] == "live":
+            RECORDING_MODE = "live"
+        elif data["cmd"] == "stop":
+            RECORDING_MODE = "stop"
+        elif data["cmd"] == "Continuous":
+            RECORDING_MODE = "continuous"
+        elif data["cmd"] == "triggering":
+            RECORDING_MODE = "triggering"
+        else:
+            print(data["cmd"])
 
 async def start_websocket_server():
     async with websockets.serve(websocket_handler, "127.0.0.1", WS_PORT):
@@ -143,13 +183,6 @@ def main():
         return
     detector = ObjectDetector()
 
-    # Initialize VideoWriter after successful camera setup IF CONTINUOUS_RECORDING is enabled
-    if CONTINUOUS_RECORDING:
-        current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-        filename = f'recordings/Continuous-Recording--{current_time}.mp4'
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
-
     threading.Thread(target=lidar_thread, args=(lidar_camera.camera,), daemon=True).start()
 
     ws_thread = Thread(target=lambda: asyncio.run(start_websocket_server()), daemon=True)
@@ -174,8 +207,8 @@ def main():
         except KeyboardInterrupt:
             print("Shutting down servers...")
             lidar_camera.release()  # Release the LiDAR camera
-            if out:
-                out.release()  # Release the VideoWriter object
+            # if out:
+            #     out.release()  # Release the VideoWriter object
 
     # while True:
 

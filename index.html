@@ -33,9 +33,24 @@
 
   <body>
     <div id='app'>
-
+        <div id="mode-buttons" class="p-absolute" style="
+            z-index: 95;
+            left: 20px;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        ">
+            <button class="btn btn-primary m-1" id="mode1">Live mode</button>
+            <button class="btn btn-primary m-1" id="stop">Stop</button>
+            <button class="btn btn-primary m-1" id="mode2">Continuous recording</button>
+            <button class="btn btn-primary m-1" id="mode3">triggering recording</button>
+        </div>
         <div id="pip" class="p-absolute m-2" style="max-width: 1600px; z-index: 90; right:0px">
-
             <div class="card m-2">
                 <div class="card-header">
                     <!-- <div class="card-title h5">Depth</div> -->
