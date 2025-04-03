@@ -33,9 +33,40 @@
 
   <body>
     <div id='app'>
-
+        <div id="mode-buttons" class="p-absolute" style="
+            z-index: 95;
+            left: 20px;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        ">
+            Stop &lt;---&gt; Start
+            <label for="recording" class="form-switch">
+                <input type="checkbox" id="recording">
+                <i class="form-icon"></i> 
+            </label>
+            <div class="form-switch-container">
+                Triggering &lt;---&gt; Manually
+                <label for="continuous" class="form-switch">
+                    <input type="checkbox" id="continuous"> 
+                    <i class="form-icon"></i>
+                </label>
+            </div>
+            <div class="form-switch-container">
+                Triggering &lt;---&gt; Manually
+                <label for="continuous" class="form-switch">
+                    <input type="checkbox" id="continuous"> 
+                    <i class="form-icon"></i>
+                </label>
+            </div>
+            
+        </div>
         <div id="pip" class="p-absolute m-2" style="max-width: 1600px; z-index: 90; right:0px">
-
             <div class="card m-2">
                 <div class="card-header">
                     <!-- <div class="card-title h5">Depth</div> -->
@@ -45,12 +76,35 @@
                   <img id="amplitudeView" src="" class="img-responsive" style="width: 100%;">
                 </div>
             </div>
-
+            <div class="card m-2" style="max-width: 1600px; z-index: 80;">
+                <div class="card-header">
+                <div class="card-title h5">Objects</div>
+                </div>
+                <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Label</th>
+                        <th>Confidence</th>
+                        <th>X</th>
+                        <th>Y</th>
+                        <th>Z(distance)</th>
+                        <th>Angle</th>
+                    </tr>
+                    </thead>
+                    <tbody id="detectionTableBody">
+                    </tbody>
+                </table>
+                </div>
+            </div>
+            
         </div>
     </div>
 
     <script>
-        window.ws = new WebSocket("ws://127.0.0.1:5678/")
+        let wsHost = window.location.hostname;
+        window.ws = new WebSocket("ws://192.168.137.206:5678/")
         // ws.sendObj = function(data) {
         //     this.send(JSON.stringify(data))
         // }
