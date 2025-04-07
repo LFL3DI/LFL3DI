@@ -30,6 +30,7 @@ def draw_results(image, results, points_3d, width, height, class_names):
             angle = compute_angle(x, z)
             angle_label = f"Angle: {angle:.1f}degree"
             position_label = f"X:{x:.1f}m Y:{y:.1f}m Z:{z:.1f}m"
+            array_index = len(detected_objects) + 1  # 1-based index
 
             conf = box.conf[0].item()
             cls = int(box.cls[0].item())
@@ -49,9 +50,10 @@ def draw_results(image, results, points_3d, width, height, class_names):
             # draw_overlay(image, label, x1, text_y_label, font_scale, box_color)
             # draw_overlay(image, position_label, x1, text_y_position, font_scale, box_color)
             # draw_overlay(image, angle_label, x1, text_y_angle, font_scale, box_color)
-            draw_overlay(image, 'test', x1, text_y_label, font_scale, box_color)
+            draw_overlay(image, f'{array_index}', x1, text_y_label, font_scale, box_color)
 
             detected_objects.append({
+                "index": array_index,
                 "label": label_name,
                 "confidence": round(conf, 2),
                 "position": [round(x, 2), round(y, 2), round(z, 2)],
