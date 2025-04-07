@@ -46,9 +46,10 @@ def draw_results(image, results, points_3d, width, height, class_names):
             text_y_label = y2 - 5
             text_y_position = text_y_label - 20
             text_y_angle = text_y_position - 20 
-            draw_overlay(image, label, x1, text_y_label, font_scale, box_color)
-            draw_overlay(image, position_label, x1, text_y_position, font_scale, box_color)
-            draw_overlay(image, angle_label, x1, text_y_angle, font_scale, box_color)
+            # draw_overlay(image, label, x1, text_y_label, font_scale, box_color)
+            # draw_overlay(image, position_label, x1, text_y_position, font_scale, box_color)
+            # draw_overlay(image, angle_label, x1, text_y_angle, font_scale, box_color)
+            draw_overlay(image, 'test', x1, text_y_label, font_scale, box_color)
 
             detected_objects.append({
                 "label": label_name,
