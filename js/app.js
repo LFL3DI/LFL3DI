@@ -33,6 +33,10 @@ const App = {
         data.objects.forEach(obj => {
           const row = document.createElement("tr");
 
+          const indexCell = document.createElement("td");
+          indexCell.textContent = obj.index;
+          row.appendChild(indexCell);
+
           const timeCell = document.createElement("td");
           timeCell.textContent = obj.timestamp;
           row.appendChild(timeCell);
