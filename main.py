@@ -198,7 +198,7 @@ def main():
     global detector, out, recording_active
     try:
         lidar_camera = LiDARCamera()
-        atexit.register(lidar_camera.release)  # Ensure camera is released on exit
+        # atexit.register(lidar_camera.release)  # Ensure camera is released on exit
     except Exception as e:
         print(f"Error in LiDAR camera initialization: {e}")
         return
@@ -226,7 +226,7 @@ def main():
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("Shutting down servers...")
-            lidar_camera.release()
+            # lidar_camera.release()
             if recording_active:
                 recording_active = False
                 out.release()
