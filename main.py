@@ -19,57 +19,66 @@ import base64
 from datetime import datetime
 import csv
 from collections import deque
+import atexit
+from custom_enum import RecordingMode
 
 
 cv2.setUseOptimized(True)
 cv2.setNumThreads(4)
 
+# Global variables for shared resources
 frame_lock = threading.Lock()
 latest_frame = None
 latest_depth = None
 latest_points_3d = None
 detector = None
 out = None
-recording = False
+recording_active = False  # Flag to indicate if the system is currently recording footage
 recording_start_time = None
-RECORDING_MODE = "stop"
-STOP_RECORDING = True
+recording_mode = None
+enable_recording = False  # Flag to turn recording on/off (corresponds to "Stop/Start" toggle on UI)
 TRIGGERED_RECORDING_TIME = 5  # seconds
 
+# WebSocket and HTTP server ports
 HTTP_PORT = 8080
 WS_PORT = 5678
 
+# Buffer to store object detection logs
 object_log_buffer = deque(maxlen=100)
 
+# Function to handle WebSocket connections
 async def websocket_handler(websocket):
-    global out, recording, recording_start_time, RECORDING_MODE, STOP_RECORDING
+    global out, recording_active, recording_start_time, recording_mode, enable_recording
     async for message in websocket:
-        data = json.loads(message)
+        data = json.loads(message)  # Parse incoming message
 
         if data["cmd"] == "read":
-            with frame_lock:
+            with frame_lock:  # Ensure thread-safe access to shared resources
                 if latest_frame is None or latest_depth is None or latest_points_3d is None:
-                    continue
+                    continue  # Skip if no data is available
                 mat_amplitude = latest_frame.copy()
                 mat_distance = latest_depth.copy()
                 points_3d = latest_points_3d.copy()
 
+            # normalize and process amplitude and distance frames
             mat_distance = np.nan_to_num(mat_distance, nan=0.0)
             mat_amplitude = cv2.normalize(mat_amplitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-            colored_image = cv2.applyColorMap(mat_amplitude, cv2.COLORMAP_JET)
-            results = detector.detect_objects(colored_image)
+            colored_image = cv2.applyColorMap(mat_amplitude, cv2.COLORMAP_JET)  # Apply color map
+            results = detector.detect_objects(colored_image)  # Classify object with YOLOv8s
 
+            # Handle NaN values in 3D points
             for point in points_3d:
                 if np.isnan(point).any():
                     point = np.nan_to_num(point)
 
+            # Draw object recognition results on the image
             output_image, object_info_list = draw_results(colored_image, results, points_3d, 160, 60, detector.model.names)
             print("OBJECT INFO LIST:", object_info_list)
             resized_image = cv2.resize(output_image, (1600, 600), interpolation=cv2.INTER_CUBIC)
-            _, buffer = cv2.imencode('.jpg', resized_image)
+            _, buffer = cv2.imencode('.jpg', resized_image)  # Encode image as JPEG
             image_base64 = base64.b64encode(buffer).decode('utf-8')
 
-            # Save to CSV
+            # Save object detection data to CSV
             if object_info_list:
                 for obj in object_info_list:
                     object_log_buffer.append([
@@ -89,7 +98,7 @@ async def websocket_handler(websocket):
 
             # Send image and object info to client
             try:
-                latest_objects = object_info_list[:5] if object_info_list else []
+                latest_objects = object_info_list[:5] if object_info_list else []  # Limit to 5 objects
                 payload = json.dumps({
                     'depth': image_base64,
                     'objects': latest_objects
@@ -98,48 +107,51 @@ async def websocket_handler(websocket):
             except Exception as e:
                 print(e)
 
-            # Recording logic...
-            if RECORDING_MODE == "triggering" and not STOP_RECORDING:
-                person_detected = any(obj['label'] == "person" for obj in object_info_list)
+            # Recording logic
+            # Triggered recording based on object detection
+            if recording_mode == RecordingMode.TRIGGER and enable_recording:
+                person_detected = any(obj['label'] == "person" for obj in object_info_list)  # Check if the desired object was detected
                 if person_detected:
-                    if not recording:
-                        recording = True
+                    if not recording_active:  # System is not already recording, start a new recording
+                        recording_active = True
                         current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
                         filename = f'recordings/Triggered-Recording-person--{current_time}.mp4'
                         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                        out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
-                    recording_start_time = time.time()
+                        out = cv2.VideoWriter(filename, fourcc, 1.0, (1600, 600))
+                    recording_start_time = time.time()  # Set the recording start time to the current time
                     out.write(resized_image)
-                elif recording_start_time is not None and time.time() - recording_start_time < TRIGGERED_RECORDING_TIME:
-                    out.write(resized_image)
-                elif recording_start_time is not None and time.time() - recording_start_time >= TRIGGERED_RECORDING_TIME:
-                    recording = False
-                    recording_start_time = None
-                    out.release()
-
-            elif RECORDING_MODE == "continuous" and not STOP_RECORDING:
-                if not recording:
-                    recording = True
+                # If an object was not detected, check if we are currently recording
+                elif recording_start_time is not None:
+                    if time.time() - recording_start_time < TRIGGERED_RECORDING_TIME:  # Still within the recording time grace period, continue recording
+                        out.write(resized_image)
+                    else:  # Greater than TRIGGERED_RECORDING_TIME seconds have passed since an object was last detected, stop recording
+                        recording_active = False
+                        recording_start_time = None
+                        out.release()
+            # Continuous recording
+            elif recording_mode == RecordingMode.CONTINUOUS and enable_recording:
+                if not recording_active:
+                    recording_active = True
                     current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
                     filename = f'recordings/Continuous-Recording--{current_time}.mp4'
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                    out = cv2.VideoWriter(filename, fourcc, 2.0, (1600, 600))
+                    out = cv2.VideoWriter(filename, fourcc, 1.0, (1600, 600))
                 out.write(resized_image)
 
         elif data["cmd"] == "start":
-            STOP_RECORDING = False
+            enable_recording = True
         elif data["cmd"] == "stop":
-            STOP_RECORDING = True
-            if recording:
-                recording = False
+            enable_recording = False
+            if recording_active:
+                recording_active = False
                 out.release()
-        elif data["cmd"] == "continuous":
-            RECORDING_MODE = "continuous"
-        elif data["cmd"] == "triggering":
-            RECORDING_MODE = "triggering"
-        elif data["cmd"] == "change":
-            if recording:
-                recording = False
+        elif data["cmd"] == RecordingMode.CONTINUOUS:
+            recording_mode = RecordingMode.CONTINUOUS
+        elif data["cmd"] == RecordingMode.TRIGGER:
+            recording_mode = RecordingMode.TRIGGER
+        elif data["cmd"] == "toggle_recording":
+            if recording_active:
+                recording_active = False
                 out.release()
         else:
             print(data["cmd"])
@@ -183,6 +195,7 @@ def main():
     global detector, out
     try:
         lidar_camera = LiDARCamera()
+        atexit.register(lidar_camera.release)  # Ensure camera is released on exit
     except Exception as e:
         print(f"Error in LiDAR camera initialization: {e}")
         return
