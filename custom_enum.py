@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
-class RecordingMode(Enum):
+class RecordingMode(StrEnum):
     """Enum for recording modes."""
     TRIGGER = "triggered"
     CONTINUOUS = "continuous"
