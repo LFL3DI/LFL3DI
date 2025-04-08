@@ -12,7 +12,7 @@ const App = {
 
     setInterval(() => {
       let message = JSON.stringify({ cmd: 'read' });
-      console.log("Sending WebSocket message:", message);
+      // console.log("Sending WebSocket message:", message);
       ws.send(message);
     }, 1000);
   },
@@ -68,20 +68,20 @@ const App = {
       }
     };
 
-    document.getElementById("continuous").addEventListener("click", function () {
-      console.log("Toggle state:", this.checked);
-
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ cmd: "change" }));
-        ws.send(JSON.stringify({ cmd: this.checked ? "continuous" : "triggering" }));
-      }
-    });
-
     document.getElementById("recording").addEventListener("click", function () {
       console.log("Toggle state:", this.checked);
 
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ cmd: this.checked ? "start" : "stop" }));
+      }
+    });
+
+    document.getElementById("continuous").addEventListener("click", function () {
+      console.log("Toggle state:", this.checked);
+
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ cmd: "change" }));
+        ws.send(JSON.stringify({ cmd: this.checked ? "continuous" : "triggered" }));
       }
     });
   },
