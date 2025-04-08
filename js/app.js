@@ -80,7 +80,7 @@ const App = {
       console.log("Toggle state:", this.checked);
 
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ cmd: "change" }));
+        ws.send(JSON.stringify({ cmd: "toggle_recording" }));
         ws.send(JSON.stringify({ cmd: this.checked ? "continuous" : "triggered" }));
       }
     });
