@@ -192,7 +192,7 @@ def lidar_thread(camera):
             print(f"Error in LiDAR thread: {e}")
 
 def main():
-    global detector, out
+    global detector, out, recording_active
     try:
         lidar_camera = LiDARCamera()
         atexit.register(lidar_camera.release)  # Ensure camera is released on exit
@@ -224,8 +224,8 @@ def main():
         except KeyboardInterrupt:
             print("Shutting down servers...")
             lidar_camera.release()
-            if recording:
-                recording = False
+            if recording_active:
+                recording_active = False
                 out.release()
 
 if __name__ == "__main__":
