@@ -45,11 +45,13 @@
             border-radius: 6px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         ">
-            Stop &lt;---&gt; Start
-            <label for="recording" class="form-switch">
-                <input type="checkbox" id="recording">
-                <i class="form-icon"></i> 
-            </label>
+            <div class="form-switch-container">
+                Stop &lt;---&gt; Start
+                <label for="recording" class="form-switch">
+                    <input type="checkbox" id="recording">
+                    <i class="form-icon"></i> 
+                </label>
+            </div>
             <div class="form-switch-container">
                 Trigger-based &lt;---&gt; Manual
                 <label for="continuous" class="form-switch">
@@ -57,7 +59,15 @@
                     <i class="form-icon"></i>
                 </label>
             </div>
-            
+            <div class="form-group">
+                <label for="objectType">Select Object for Trigger-Based Recording:</label>
+                <select id="objectType" class="form-select">
+                    <option value="person">Person</option>
+                    <option value="hand">Hand</option>
+                    <option value="rectangle">Rectangle</option>
+                    <option value="circle">Circle</option>
+                </select>
+            </div>
         </div>
         <div id="pip" class="p-absolute m-2" style="max-width: 1600px; z-index: 90; right:0px">
             <div class="card m-2">

@@ -84,6 +84,15 @@ const App = {
         ws.send(JSON.stringify({ cmd: this.checked ? "continuous" : "triggered" }));
       }
     });
+
+    document.getElementById("objectType").addEventListener("change", function () {
+      const selectedObject = this.value;
+      console.log("Selected object type:", selectedObject);
+  
+      if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ cmd: "set_object", object: selectedObject }));
+      }
+    });
   },
 
   data() {

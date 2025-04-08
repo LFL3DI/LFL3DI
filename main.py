@@ -38,6 +38,7 @@ recording_start_time = None
 recording_mode = None
 enable_recording = False  # Flag to turn recording on/off (corresponds to "Stop/Start" toggle on UI)
 TRIGGERED_RECORDING_TIME = 5  # seconds
+trigger_object = "person"  # Object to detect for trigger-based recording. Defaults to "person"
 
 # WebSocket and HTTP server ports
 HTTP_PORT = 8080
@@ -48,7 +49,7 @@ object_log_buffer = deque(maxlen=100)
 
 # Function to handle WebSocket connections
 async def websocket_handler(websocket):
-    global out, recording_active, recording_start_time, recording_mode, enable_recording
+    global out, recording_active, recording_start_time, recording_mode, enable_recording, trigger_object
     async for message in websocket:
         data = json.loads(message)  # Parse incoming message
 
@@ -110,12 +111,12 @@ async def websocket_handler(websocket):
             # Recording logic
             # Triggered recording based on object detection
             if recording_mode == RecordingMode.TRIGGER and enable_recording:
-                person_detected = any(obj['label'] == "person" for obj in object_info_list)  # Check if the desired object was detected
-                if person_detected:
+                desired_object_detected = any(obj['label'] == trigger_object for obj in object_info_list)  # Check if the desired object was detected
+                if desired_object_detected:
                     if not recording_active:  # System is not already recording, start a new recording
                         recording_active = True
                         current_time = datetime.now().strftime("%Y-%m-%d--%H-%M-%S")
-                        filename = f'recordings/Triggered-Recording-person--{current_time}.mp4'
+                        filename = f'recordings/Triggered-Recording-{trigger_object}--{current_time}.mp4'
                         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                         out = cv2.VideoWriter(filename, fourcc, 1.0, (1600, 600))
                     recording_start_time = time.time()  # Set the recording start time to the current time
@@ -153,6 +154,8 @@ async def websocket_handler(websocket):
             if recording_active:
                 recording_active = False
                 out.release()
+        elif data["cmd"] == "set_object":
+            trigger_object = data.get("object", "person")
         else:
             print(data["cmd"])
 
