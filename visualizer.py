@@ -8,7 +8,7 @@ def compute_angle(x, z):
     return math.degrees(math.atan2(x, z))
 
 # Function to draw a semi-transparent overlay with text on an image
-def draw_overlay(image, text, x, y, font_scale, color, alpha=0.5):
+def draw_overlay(image, text, x, y, font_scale, color, alpha=0.3):
     """
     Draws a semi-transparent rectangle with text on the image.
     - image: The image to draw on.
@@ -75,7 +75,7 @@ def draw_results(image, results, points_3d, width, height, class_names):
             box_color = (0, 255, 0)  # Green
 
             # Draw the bounding box around the object
-            cv2.rectangle(image, (x1, y1), (x2, y2), box_color, 2)
+            cv2.rectangle(image, (x1, y1), (x2, y2), box_color, 1)
 
             # Adjust font scale based on the size of the bounding box
             font_scale = max(0.3, min((x2 - x1) / 300, 0.6))
@@ -89,7 +89,7 @@ def draw_results(image, results, points_3d, width, height, class_names):
             # draw_overlay(image, label, x1, text_y_label, font_scale, box_color)
             # draw_overlay(image, position_label, x1, text_y_position, font_scale, box_color)
             # draw_overlay(image, angle_label, x1, text_y_angle, font_scale, box_color)
-            draw_overlay(image, f'{array_index}', x1, text_y_label, font_scale, box_color)
+            draw_overlay(image, label, x1, text_y_label, font_scale, box_color)
 
             # Append the detected object information to the list
             detected_objects.append({
