@@ -81,7 +81,7 @@ const App = {
 
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ cmd: "toggle_recording" }));
-        ws.send(JSON.stringify({ cmd: this.checked ? "continuous" : "triggered" }));
+        ws.send(JSON.stringify({ cmd: this.checked ? "triggered" : "continuous" }));
       }
     });
 
