@@ -68,7 +68,7 @@ const App = {
       }
     };
 
-    document.getElementById("recording").addEventListener("click", function () {
+    document.getElementById("enable-recording").addEventListener("click", function () {
       console.log("Toggle state:", this.checked);
 
       if (ws.readyState === WebSocket.OPEN) {
@@ -76,7 +76,7 @@ const App = {
       }
     });
 
-    document.getElementById("continuous").addEventListener("click", function () {
+    document.getElementById("recording-mode").addEventListener("click", function () {
       console.log("Toggle state:", this.checked);
 
       if (ws.readyState === WebSocket.OPEN) {
@@ -85,7 +85,7 @@ const App = {
       }
     });
 
-    document.getElementById("objectType").addEventListener("change", function () {
+    document.getElementById("object-type").addEventListener("change", function () {
       const selectedObject = this.value;
       console.log("Selected object type:", selectedObject);
   
@@ -97,7 +97,7 @@ const App = {
     // Disable "Trigger Object" dropdown depending on the recording mode
     document.getElementById("recording-mode").addEventListener("change", function () {
         console.log("Switch state changed:", this.checked);
-        const objectTypeDropdown = document.getElementById("objectType");
+        const objectTypeDropdown = document.getElementById("object-type");
         objectTypeDropdown.disabled = !this.checked;
     });
   },
