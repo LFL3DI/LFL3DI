@@ -93,6 +93,13 @@ const App = {
           ws.send(JSON.stringify({ cmd: "set_object", object: selectedObject }));
       }
     });
+
+    // Disable "Trigger Object" dropdown depending on the recording mode
+    document.getElementById("recording-mode").addEventListener("change", function () {
+        console.log("Switch state changed:", this.checked);
+        const objectTypeDropdown = document.getElementById("objectType");
+        objectTypeDropdown.disabled = !this.checked;
+    });
   },
 
   data() {

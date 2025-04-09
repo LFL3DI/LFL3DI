@@ -47,15 +47,15 @@
         ">
             <div class="form-switch-container">
                 Stop &lt;---&gt; Start
-                <label for="recording" class="form-switch">
-                    <input type="checkbox" id="recording">
+                <label for="enable-recording" class="form-switch">
+                    <input type="checkbox" id="enable-recording">
                     <i class="form-icon"></i> 
                 </label>
             </div>
             <div class="form-switch-container">
                 Manual &lt;---&gt; Trigger-based
-                <label for="continuous" class="form-switch">
-                    <input type="checkbox" id="continuous"> 
+                <label for="recording-mode" class="form-switch">
+                    <input type="checkbox" id="recording-mode"> 
                     <i class="form-icon"></i>
                 </label>
             </div>
@@ -112,12 +112,6 @@
         // ws.sendObj = function(data) {
         //     this.send(JSON.stringify(data))
         // }
-
-        // Enable the trigger object dropdown only when in "trigger-based" mode
-        document.getElementById("continuous").addEventListener("change", function () {
-            const objectTypeDropdown = document.getElementById("objectType");
-            objectTypeDropdown.disabled = !this.checked;
-        });
     </script>
 
     <script type="module" src="js/app.js" ></script>
