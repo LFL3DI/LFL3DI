@@ -20,7 +20,7 @@ const App = {
   mounted() {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("Received WebSocket data:", data);
+      // console.log("Received WebSocket data:", data);
 
       if (data.depth) {
         document.getElementById("amplitudeView").src = "data:image/png;base64," + data.depth;
@@ -69,7 +69,7 @@ const App = {
     };
 
     document.getElementById("enable-recording").addEventListener("click", function () {
-      console.log("Toggle state:", this.checked);
+      // console.log("Toggle enable-recording state:", this.checked);
 
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ cmd: this.checked ? "start" : "stop" }));
@@ -77,7 +77,7 @@ const App = {
     });
 
     document.getElementById("recording-mode").addEventListener("click", function () {
-      console.log("Toggle state:", this.checked);
+      // console.log("Toggle recording-mode state:", this.checked);
 
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ cmd: "toggle_recording" }));
@@ -87,7 +87,7 @@ const App = {
 
     document.getElementById("object-type").addEventListener("change", function () {
       const selectedObject = this.value;
-      console.log("Selected object type:", selectedObject);
+      // console.log("Selected object type:", selectedObject);
   
       if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ cmd: "set_object", object: selectedObject }));
@@ -96,7 +96,7 @@ const App = {
 
     // Disable "Trigger Object" dropdown depending on the recording mode
     document.getElementById("recording-mode").addEventListener("change", function () {
-        console.log("Switch state changed:", this.checked);
+        // console.log("Switch state changed:", this.checked);
         const objectTypeDropdown = document.getElementById("object-type");
         objectTypeDropdown.disabled = !this.checked;
     });
