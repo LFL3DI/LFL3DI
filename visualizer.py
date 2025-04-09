@@ -86,7 +86,6 @@ def draw_results(image, results, points_3d, width, height, class_names):
             text_y_angle = text_y_position - 20
 
             # Draw the object index on the image (commented-out labels can be re-enabled if needed)
-            # draw_overlay(image, label, x1, text_y_label, font_scale, box_color)
             # draw_overlay(image, position_label, x1, text_y_position, font_scale, box_color)
             # draw_overlay(image, angle_label, x1, text_y_angle, font_scale, box_color)
             draw_overlay(image, label, x1, text_y_label, font_scale, box_color)
