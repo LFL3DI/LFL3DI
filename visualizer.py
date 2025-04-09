@@ -40,19 +40,13 @@ def draw_results(image, results, points_3d, width, height, class_names):
     - image: The image with the detection results drawn.
     - detected_objects: A list of dictionaries containing detection information.
     """
-    # Upscale the image to a higher resolution
-    upscale_factor = 2  # Increase this factor for sharper overlays
-    high_res_width = width * upscale_factor
-    high_res_height = height * upscale_factor
-    image = cv2.resize(image, (high_res_width, high_res_height), interpolation=cv2.INTER_CUBIC)
-
     detected_objects = []  # List to store information about detected objects
 
     # Iterate through the detection results
     for result in results:
         for box in result.boxes:
             # Extract bounding box coordinates
-            x1, y1, x2, y2 = (box.xyxy[0].cpu().numpy() * upscale_factor).astype(int)
+            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
             center_x = int((x1 + x2) / 2)  # Compute the center x-coordinate of the box
             center_y = int((y1 + y2) / 2)  # Compute the center y-coordinate of the box
             
@@ -107,7 +101,4 @@ def draw_results(image, results, points_3d, width, height, class_names):
                 "timestamp": timestamp  # Detection timestamp
             })
 
-    # Downscale the image back to the original resolution for display
-    image = cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
-    
     return image, detected_objects  # Return the annotated image and list of detected objects
